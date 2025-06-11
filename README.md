@@ -66,6 +66,15 @@ $ npm run test:e2e
 # test coverage
 $ npm run test:cov
 ```
+## Prisma commands
+
+```bash
+# Drop the database
+$ npx prisma migrate reset
+
+# Apply migrations again
+$ npx prisma migrate dev
+```
 
 ## Deployment
 
