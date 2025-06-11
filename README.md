@@ -46,6 +46,16 @@ $ npm run start:prod
 
 ## Run tests
 
+Run the unit tests in a docker container using the following code
+
+```bash
+# build the docker container
+docker build -t lightweight-e-commerce-backend-app .
+
+# run the docker container with the unit tests
+docker run -e DATABASE_URL=... lightweight-e-commerce-backend-app
+```
+
 ```bash
 # unit tests
 $ npm run test
