@@ -2,11 +2,13 @@ import { Body, Controller, Get, Post, Request, UseGuards } from '@nestjs/common'
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('users')
 export class UserController {
   constructor(private userService: UserService) {}
 
+  @ApiBearerAuth('access_token')
   @UseGuards(JwtAuthGuard)
   @Get('me')
   getMe(@Request() req) {
