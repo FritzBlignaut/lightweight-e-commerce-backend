@@ -19,6 +19,7 @@ model User {
   password String
   role     Role     @default(CUSTOMER)
   orders   Order[]
+  Cart Cart[]
 }
 
 model Product {
@@ -29,6 +30,7 @@ model Product {
   stock       Int
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  CartItem CartItem[]
 }
 
 model Order {
@@ -38,6 +40,26 @@ model Order {
   total     Float
   createdAt DateTime @default(now())
 }
+
+model Cart {
+  id        String      @id @default(uuid())
+  userId    Int
+  user      User        @relation(fields: [userId], references: [id])
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  items     CartItem[]
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  productId Int
+  quantity  Int      @default(1)
+  cart      Cart     @relation(fields: [cartId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+  @@unique([cartId, productId]) // One product per cart
+}
+
 
 enum Role {
   ADMIN
