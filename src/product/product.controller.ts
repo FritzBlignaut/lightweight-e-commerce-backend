@@ -5,6 +5,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @ApiBearerAuth('access_token')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -45,7 +46,7 @@ export class ProductController {
     }
 
     @Post(':id')
-    update(@Param('id') id: string, @Body() updateProductDto: CreateProductDto) {
+    update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
         return this.productService.update(id, updateProductDto);
     }
 
