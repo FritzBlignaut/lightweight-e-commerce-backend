@@ -191,3 +191,40 @@ src/
 ├── app.module.ts      # Main application module
 └── main.ts            # Application entry point
 ```
+
+### Using Swagger Documentation with Lightweight E-commerce Backend
+Swagger/OpenAPI is already integrated into this project to provide interactive API documentation. Here's how to access and use it:
+
+### Accessing Swagger Documentation
+
+1. **Start the server** (if not already running):
+
+```bash
+npm run start:dev
+```
+
+2. **Open Swagger UI** in your browser:
+
+```bash
+http://localhost:3000/docs
+```
+
+### What You'll Find in the Swagger Documentation
+When you access the Swagger UI, you'll see:
+
+1. **All API endpoints** organized by controller
+2. **Request parameters** required for each endpoint
+3. **Response schemas** showing the data structure returned
+4. **Authentication requirements** for protected endpoints
+5. **Interactive testing** functionality to try the endpoints
+
+### How to Use the Interactive Features
+1. **Authenticate**:
+    - Click the "Authorize" button (usually at the top)
+    - Enter your JWT token in the format: Bearer your-token-here
+    - Click "Authorize" to use this token for all requests
+2. **Try an endpoint**:
+    - Expand any endpoint by clicking on it
+    - Fill in the required parameters
+    - Click "Execute" to make a live API call
+    - View the response below
