@@ -1,21 +1,22 @@
-# Step 1: Base image
-FROM node:20-alpine
-
-# Step 2: Set working directory
+# Base stage for dependencies
+FROM node:20-alpine AS base
 WORKDIR /app
-
-# Step 3: Copy package files and install dependencies
 COPY package*.json ./
 RUN npm ci
 
-# Step 4: Copy the rest of the app
+# Build stage
+FROM base AS build
 COPY . .
-
-# Step 5: Generate Prisma client
 RUN npx prisma generate
-
-# Step 6: Run build
 RUN npm run build
 
-# Step 7: Default command (for production deployment)
+# Production stage
+FROM node:20-alpine AS production
+WORKDIR /app
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package*.json ./
+COPY --from=build /app/prisma ./prisma
+
+# Make sure the application runs properly
 CMD ["npm", "run", "start:prod"]
