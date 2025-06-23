@@ -17,6 +17,7 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package*.json ./
 COPY --from=build /app/prisma ./prisma
+RUN npm install --omit=dev
 
 # Make sure the application runs properly
-CMD ["npm", "run", "start:prod"]
+CMD ["node", "dist/main"]
