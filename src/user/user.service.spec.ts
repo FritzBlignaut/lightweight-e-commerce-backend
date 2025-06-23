@@ -2,12 +2,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from './user.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConflictException } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
 
-// Mock bcrypt correctly with proper types
-const mockedBcrypt = jest.mocked(bcrypt);
-jest.mock('bcrypt');
+// Import and mock bcrypt properly for TypeScript
+import * as bcrypt from 'bcrypt';
+
+// Mock the entire bcrypt module
+jest.mock('bcrypt', () => ({
+  hash: jest.fn().mockImplementation(() => Promise.resolve('hashed_password')),
+}));
 
 describe('UserService', () => {
   let service: UserService;
@@ -38,6 +41,9 @@ describe('UserService', () => {
 
     // Reset all mocks before each test
     jest.clearAllMocks();
+
+    // Reset bcrypt mock
+    jest.mocked(bcrypt.hash).mockClear();
   });
 
   it('should be defined', () => {
@@ -71,15 +77,15 @@ describe('UserService', () => {
         email: 'new@example.com',
         password: 'password123',
       };
-      const hashedPassword = 'hashedPassword123';
+      const hashedPassword = 'hashed_password';
       const mockCreatedUser = {
         id: 1,
         email: 'new@example.com',
         role: 'CUSTOMER',
       };
 
-      // Setup mocks - Fix bcrypt.hash calls
-      mockedBcrypt.hash.mockResolvedValue(hashedPassword);
+      // Setup mocks
+      jest.mocked(bcrypt.hash).mockResolvedValueOnce(hashedPassword);
       mockPrismaService.user.findUnique.mockResolvedValue(null); // No existing user
       mockPrismaService.user.create.mockResolvedValue(mockCreatedUser);
 
@@ -91,7 +97,7 @@ describe('UserService', () => {
       expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
         where: { email: 'new@example.com' },
       });
-      expect(mockedBcrypt.hash).toHaveBeenCalledWith('password123', 10);
+      expect(bcrypt.hash).toHaveBeenCalledWith('password123', 10);
       expect(mockPrismaService.user.create).toHaveBeenCalledWith({
         data: {
           email: 'new@example.com',
@@ -108,15 +114,15 @@ describe('UserService', () => {
         password: 'password123',
         role: Role.ADMIN,
       };
-      const hashedPassword = 'hashedPassword123';
+      const hashedPassword = 'hashed_password';
       const mockCreatedUser = {
         id: 1,
         email: 'admin@example.com',
         role: Role.ADMIN,
       };
 
-      // Setup mocks - Fix bcrypt.hash calls
-      mockedBcrypt.hash.mockResolvedValue(hashedPassword);
+      // Setup mocks
+      jest.mocked(bcrypt.hash).mockResolvedValueOnce(hashedPassword);
       mockPrismaService.user.findUnique.mockResolvedValue(null);
       mockPrismaService.user.create.mockResolvedValue(mockCreatedUser);
 
