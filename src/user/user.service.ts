@@ -1,6 +1,6 @@
 import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { User, Role } from '@prisma/client'; // Adjust the import based on your Prisma setup
+import { User, Role } from '@prisma/client';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
 
@@ -22,20 +22,21 @@ export class UserService {
       throw new ConflictException('User with this email already exists');
     }
 
-    // Fix type safety issues with bcrypt
-    const hashedPassword = (await bcrypt.hash(
+    // Fixed bcrypt call with explicit type casting
+    // This tells TypeScript to trust us that the returned value is a string
+    const hashedPassword: string = (await bcrypt.hash(
       createUserDto.password,
       10,
     )) as string;
 
-    // Explicitly define the role type for better type safety
-    const role: Role = (createUserDto.role as Role) || Role.CUSTOMER;
+    // Use type casting to ensure TypeScript knows this is a valid Role
+    const userRole: Role = createUserDto.role || Role.CUSTOMER;
 
     return this.prisma.user.create({
       data: {
         email: createUserDto.email,
         password: hashedPassword,
-        role: role,
+        role: userRole,
       },
     });
   }

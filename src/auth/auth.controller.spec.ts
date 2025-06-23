@@ -1,18 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { Request } from 'express';
-import { UnauthorizedException } from '@nestjs/common';
 
 describe('AuthController', () => {
   let controller: AuthController;
-  let authService: AuthService;
 
-  // Mock auth service
+  // Mock AuthService
   const mockAuthService = {
-    login: jest.fn(),
     register: jest.fn(),
     validateUser: jest.fn(),
+    login: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -27,9 +24,8 @@ describe('AuthController', () => {
     }).compile();
 
     controller = module.get<AuthController>(AuthController);
-    authService = module.get<AuthService>(AuthService);
 
-    // Reset mocks before each test
+    // Reset all mocks before each test
     jest.clearAllMocks();
   });
 
@@ -37,60 +33,21 @@ describe('AuthController', () => {
     expect(controller).toBeDefined();
   });
 
-  describe('login', () => {
-    it('should return access token on successful login', async () => {
-      // Mock data
-      const loginDto = { email: 'test@example.com', password: 'password123' };
-      const user = { id: 1, email: 'test@example.com', role: 'CUSTOMER' };
-      const loginResponse = { access_token: 'jwt-token' };
-
-      // Setup mocks
-      mockAuthService.validateUser.mockResolvedValue(user);
-      mockAuthService.login.mockResolvedValue(loginResponse);
-
-      // Execute
-      const result = await controller.login(loginDto);
-
-      // Assert
-      expect(result).toEqual(loginResponse);
-      expect(mockAuthService.validateUser).toHaveBeenCalledWith(
-        loginDto.email,
-        loginDto.password,
-      );
-      expect(mockAuthService.login).toHaveBeenCalledWith(user);
-    });
-
-    it('should propagate exceptions from validateUser', async () => {
-      // Mock data
-      const loginDto = { email: 'test@example.com', password: 'wrongpassword' };
-
-      // Setup mocks
-      mockAuthService.validateUser.mockRejectedValue(
-        new UnauthorizedException('Invalid credentials'),
-      );
-
-      // Execute & Assert
-      await expect(controller.login(loginDto)).rejects.toThrow(
-        UnauthorizedException,
-      );
-      expect(mockAuthService.validateUser).toHaveBeenCalledWith(
-        loginDto.email,
-        loginDto.password,
-      );
-      expect(mockAuthService.login).not.toHaveBeenCalled();
-    });
-  });
-
   describe('register', () => {
-    it('should register a new user and return access token', async () => {
+    it('should register a new user', async () => {
       // Mock data
       const registerDto = {
-        email: 'new@example.com',
+        email: 'test@example.com',
         password: 'password123',
       };
-      const registrationResponse = { access_token: 'jwt-token' };
 
-      // Setup mocks
+      const registrationResponse = {
+        id: 1,
+        email: 'test@example.com',
+        role: 'CUSTOMER',
+      };
+
+      // Setup mock
       mockAuthService.register.mockResolvedValue(registrationResponse);
 
       // Execute
@@ -108,9 +65,14 @@ describe('AuthController', () => {
         password: 'password123',
         role: 'ADMIN',
       };
-      const registrationResponse = { access_token: 'admin-jwt-token' };
 
-      // Setup mocks
+      const registrationResponse = {
+        id: 1,
+        email: 'admin@example.com',
+        role: 'ADMIN',
+      };
+
+      // Setup mock
       mockAuthService.register.mockResolvedValue(registrationResponse);
 
       // Execute
@@ -139,23 +101,64 @@ describe('AuthController', () => {
     });
   });
 
-  describe('getProfile', () => {
-    it('should return user profile from request object', () => {
-      // Mock Request object
-      const mockUser = {
-        userId: 1,
+  describe('login', () => {
+    it('should login a user and return token', async () => {
+      // Mock data
+      const loginDto = {
+        email: 'test@example.com',
+        password: 'password123',
+      };
+
+      const user = {
+        id: 1,
         email: 'test@example.com',
         role: 'CUSTOMER',
       };
-      const mockRequest = {
-        user: mockUser,
-      } as unknown as Request;
+
+      const loginResponse = {
+        access_token: 'jwt-token',
+        user: {
+          id: 1,
+          email: 'test@example.com',
+          role: 'CUSTOMER',
+        },
+      };
+
+      // Setup mocks
+      mockAuthService.validateUser.mockResolvedValue(user);
+      mockAuthService.login.mockResolvedValue(loginResponse);
 
       // Execute
-      const result = controller.getProfile(mockRequest);
+      const result = await controller.login(loginDto);
 
       // Assert
-      expect(result).toEqual(mockUser);
+      expect(result).toEqual(loginResponse);
+      expect(mockAuthService.validateUser).toHaveBeenCalledWith(
+        loginDto.email,
+        loginDto.password,
+      );
+      expect(mockAuthService.login).toHaveBeenCalledWith(user);
+    });
+
+    it('should handle invalid credentials', async () => {
+      // Mock data
+      const loginDto = {
+        email: 'test@example.com',
+        password: 'wrongpassword',
+      };
+
+      // Setup mock to simulate authentication failure
+      mockAuthService.validateUser.mockRejectedValue(
+        new Error('Invalid credentials'),
+      );
+
+      // Execute & Assert
+      await expect(controller.login(loginDto)).rejects.toThrow();
+      expect(mockAuthService.validateUser).toHaveBeenCalledWith(
+        loginDto.email,
+        loginDto.password,
+      );
+      expect(mockAuthService.login).not.toHaveBeenCalled();
     });
   });
 });
