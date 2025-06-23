@@ -43,7 +43,7 @@ describe('AuthController', () => {
       const loginDto = { email: 'test@example.com', password: 'password123' };
       const user = { id: 1, email: 'test@example.com', role: 'CUSTOMER' };
       const loginResponse = { access_token: 'jwt-token' };
-      
+
       // Setup mocks
       mockAuthService.validateUser.mockResolvedValue(user);
       mockAuthService.login.mockResolvedValue(loginResponse);
@@ -54,8 +54,8 @@ describe('AuthController', () => {
       // Assert
       expect(result).toEqual(loginResponse);
       expect(mockAuthService.validateUser).toHaveBeenCalledWith(
-        loginDto.email, 
-        loginDto.password
+        loginDto.email,
+        loginDto.password,
       );
       expect(mockAuthService.login).toHaveBeenCalledWith(user);
     });
@@ -63,17 +63,19 @@ describe('AuthController', () => {
     it('should propagate exceptions from validateUser', async () => {
       // Mock data
       const loginDto = { email: 'test@example.com', password: 'wrongpassword' };
-      
+
       // Setup mocks
       mockAuthService.validateUser.mockRejectedValue(
-        new UnauthorizedException('Invalid credentials')
+        new UnauthorizedException('Invalid credentials'),
       );
 
       // Execute & Assert
-      await expect(controller.login(loginDto)).rejects.toThrow(UnauthorizedException);
+      await expect(controller.login(loginDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
       expect(mockAuthService.validateUser).toHaveBeenCalledWith(
-        loginDto.email, 
-        loginDto.password
+        loginDto.email,
+        loginDto.password,
       );
       expect(mockAuthService.login).not.toHaveBeenCalled();
     });
@@ -82,12 +84,12 @@ describe('AuthController', () => {
   describe('register', () => {
     it('should register a new user and return access token', async () => {
       // Mock data
-      const registerDto = { 
-        email: 'new@example.com', 
-        password: 'password123' 
+      const registerDto = {
+        email: 'new@example.com',
+        password: 'password123',
       };
       const registrationResponse = { access_token: 'jwt-token' };
-      
+
       // Setup mocks
       mockAuthService.register.mockResolvedValue(registrationResponse);
 
@@ -101,13 +103,13 @@ describe('AuthController', () => {
 
     it('should register a user with specified role', async () => {
       // Mock data
-      const registerDto = { 
-        email: 'admin@example.com', 
+      const registerDto = {
+        email: 'admin@example.com',
         password: 'password123',
-        role: 'ADMIN'
+        role: 'ADMIN',
       };
       const registrationResponse = { access_token: 'admin-jwt-token' };
-      
+
       // Setup mocks
       mockAuthService.register.mockResolvedValue(registrationResponse);
 
@@ -121,13 +123,15 @@ describe('AuthController', () => {
 
     it('should handle registration errors', async () => {
       // Mock data
-      const registerDto = { 
-        email: 'existing@example.com', 
-        password: 'password123' 
+      const registerDto = {
+        email: 'existing@example.com',
+        password: 'password123',
       };
-      
+
       // Setup mocks to simulate error
-      mockAuthService.register.mockRejectedValue(new Error('Email already exists'));
+      mockAuthService.register.mockRejectedValue(
+        new Error('Email already exists'),
+      );
 
       // Execute & Assert
       await expect(controller.register(registerDto)).rejects.toThrow();
@@ -138,13 +142,13 @@ describe('AuthController', () => {
   describe('getProfile', () => {
     it('should return user profile from request object', () => {
       // Mock Request object
-      const mockUser = { 
-        userId: 1, 
+      const mockUser = {
+        userId: 1,
         email: 'test@example.com',
-        role: 'CUSTOMER' 
+        role: 'CUSTOMER',
       };
       const mockRequest = {
-        user: mockUser
+        user: mockUser,
       } as unknown as Request;
 
       // Execute

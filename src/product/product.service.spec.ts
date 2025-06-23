@@ -7,7 +7,6 @@ import { ProductQueryParams } from './dto/product-query.dto';
 
 describe('ProductService', () => {
   let service: ProductService;
-  let prismaService: PrismaService;
 
   // Mock PrismaService
   const mockPrismaService = {
@@ -34,7 +33,6 @@ describe('ProductService', () => {
     }).compile();
 
     service = module.get<ProductService>(ProductService);
-    prismaService = module.get<PrismaService>(PrismaService);
 
     // Reset all mocks before each test
     jest.clearAllMocks();
@@ -59,7 +57,7 @@ describe('ProductService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       // Setup mock
       mockPrismaService.product.create.mockResolvedValue(mockProduct);
 
@@ -83,7 +81,7 @@ describe('ProductService', () => {
       ];
       const mockCount = 2;
       const queryParams: ProductQueryParams = {};
-      
+
       // Setup mocks - use mockImplementation like in the search test
       mockPrismaService.$transaction.mockImplementation((operations) => {
         // Check that operations is an array with 2 items
@@ -96,32 +94,34 @@ describe('ProductService', () => {
 
       // Assert
       expect(result).toEqual({ items: mockProducts, total: mockCount });
-      
+
       // Only check that $transaction was called
       expect(mockPrismaService.$transaction).toHaveBeenCalled();
-      
+
       // Check that findMany and count were called with appropriate parameters
       expect(mockPrismaService.product.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {},
           skip: 0,
           take: 10,
-        })
+        }),
       );
-      
+
       expect(mockPrismaService.product.count).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {},
-        })
+        }),
       );
     });
 
     it('should apply search filter correctly', async () => {
       // Mock data
-      const mockProducts = [{ id: 1, name: 'Test Product', price: 10.99, stock: 5 }];
+      const mockProducts = [
+        { id: 1, name: 'Test Product', price: 10.99, stock: 5 },
+      ];
       const mockCount = 1;
       const queryParams: ProductQueryParams = { search: 'test' };
-      
+
       // Setup mocks - use mockImplementation to handle the array parameter
       mockPrismaService.$transaction.mockImplementation((operations) => {
         // Check that operations is an array with 2 items
@@ -134,10 +134,10 @@ describe('ProductService', () => {
 
       // Assert
       expect(result).toEqual({ items: mockProducts, total: mockCount });
-      
+
       // Only check that $transaction was called
       expect(mockPrismaService.$transaction).toHaveBeenCalled();
-      
+
       // Check that findMany and count were called with appropriate filters
       expect(mockPrismaService.product.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -145,20 +145,20 @@ describe('ProductService', () => {
             OR: [
               { name: { contains: 'test', mode: 'insensitive' } },
               { description: { contains: 'test', mode: 'insensitive' } },
-            ]
-          }
-        })
+            ],
+          },
+        }),
       );
-      
+
       expect(mockPrismaService.product.count).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
             OR: [
               { name: { contains: 'test', mode: 'insensitive' } },
               { description: { contains: 'test', mode: 'insensitive' } },
-            ]
-          }
-        })
+            ],
+          },
+        }),
       );
     });
 
@@ -170,27 +170,52 @@ describe('ProductService', () => {
       ];
       const mockCount = 2;
       const queryParams: ProductQueryParams = { minPrice: 10, maxPrice: 30 };
-      
+
       // Setup mocks
-      mockPrismaService.$transaction.mockResolvedValue([mockProducts, mockCount]);
+      mockPrismaService.$transaction.mockResolvedValue([
+        mockProducts,
+        mockCount,
+      ]);
 
       // Execute
       await service.findAll(queryParams);
 
       // Assert
+      // Remove this unused whereCondition or use it in an assertion
+      /*
       const whereCondition = {
         price: {
           gte: 10,
           lte: 30,
         },
       };
-      
+      */
+
       // Verify the expected arguments were passed to $transaction
       expect(mockPrismaService.$transaction).toHaveBeenCalled();
-      
-      // Check if findMany and count were called
-      expect(mockPrismaService.product.findMany).toHaveBeenCalled();
-      expect(mockPrismaService.product.count).toHaveBeenCalled();
+
+      // Check if findMany and count were called with the right price filters
+      expect(mockPrismaService.product.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            price: {
+              gte: 10,
+              lte: 30,
+            },
+          }),
+        }),
+      );
+
+      expect(mockPrismaService.product.count).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            price: {
+              gte: 10,
+              lte: 30,
+            },
+          }),
+        }),
+      );
     });
 
     it('should apply pagination correctly', async () => {
@@ -201,22 +226,25 @@ describe('ProductService', () => {
       ];
       const mockCount = 10; // Total products
       const queryParams: ProductQueryParams = { limit: 2, offset: 4 };
-      
+
       // Setup mocks
-      mockPrismaService.$transaction.mockResolvedValue([mockProducts, mockCount]);
+      mockPrismaService.$transaction.mockResolvedValue([
+        mockProducts,
+        mockCount,
+      ]);
 
       // Execute
       const result = await service.findAll(queryParams);
 
       // Assert
       expect(result).toEqual({ items: mockProducts, total: mockCount });
-      
+
       // Verify pagination parameters
       expect(mockPrismaService.product.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           skip: 4,
           take: 2,
-        })
+        }),
       );
     });
   });
@@ -234,7 +262,7 @@ describe('ProductService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       // Setup mock
       mockPrismaService.product.findUnique.mockResolvedValue(mockProduct);
 
@@ -251,7 +279,7 @@ describe('ProductService', () => {
     it('should return null if product not found', async () => {
       // Mock data
       const productId = '999';
-      
+
       // Setup mock
       mockPrismaService.product.findUnique.mockResolvedValue(null);
 
@@ -268,7 +296,7 @@ describe('ProductService', () => {
     it('should handle non-numeric IDs gracefully', async () => {
       // Mock data
       const productId = 'abc';
-      
+
       // Execute
       await service.findOne(productId);
 
@@ -296,7 +324,7 @@ describe('ProductService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       // Setup mock
       mockPrismaService.product.update.mockResolvedValue(mockUpdatedProduct);
 
@@ -325,7 +353,7 @@ describe('ProductService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       // Setup mock
       mockPrismaService.product.delete.mockResolvedValue(mockDeletedProduct);
 

@@ -1,6 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { OrderStatus, Prisma } from "@prisma/client";
-import { PrismaService } from "src/prisma/prisma.service";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { OrderStatus, Prisma } from '@prisma/client';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class OrderService {
@@ -23,7 +27,9 @@ export class OrderService {
     // Stock validation
     for (const item of cart.items) {
       if (item.quantity > item.product.stock) {
-        throw new BadRequestException(`Not enough stock for ${item.product.name}`);
+        throw new BadRequestException(
+          `Not enough stock for ${item.product.name}`,
+        );
       }
     }
 
@@ -161,11 +167,13 @@ export class OrderService {
   async updateOrderStatus(
     orderId: string,
     status: OrderStatus,
-    req: Request & { user: { userId: string } }
+    req: Request & { user: { userId: string } },
   ) {
     const userId = req.user.userId;
 
-    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
 
     if (!order) {
       throw new NotFoundException('Order not found');

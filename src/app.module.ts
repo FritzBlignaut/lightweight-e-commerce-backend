@@ -10,7 +10,15 @@ import { AdminModule } from './admin/admin.module';
 import { CartModule } from './cart/cart.module';
 
 @Module({
-  imports: [PrismaModule, UserModule, ProductModule, OrderModule, AuthModule, AdminModule, CartModule],
+  imports: [
+    PrismaModule,
+    UserModule,
+    ProductModule,
+    OrderModule,
+    AuthModule,
+    AdminModule,
+    CartModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

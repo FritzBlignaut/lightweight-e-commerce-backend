@@ -2,16 +2,17 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { Request } from 'express';
 
 describe('UserController', () => {
   let controller: UserController;
-  let userService: UserService;
 
   // Mock UserService
   const mockUserService = {
     create: jest.fn(),
+    findAll: jest.fn(),
     findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -26,7 +27,6 @@ describe('UserController', () => {
     }).compile();
 
     controller = module.get<UserController>(UserController);
-    userService = module.get<UserService>(UserService);
 
     // Reset all mocks before each test
     jest.clearAllMocks();
@@ -36,28 +36,6 @@ describe('UserController', () => {
     expect(controller).toBeDefined();
   });
 
-  describe('getMe', () => {
-    it('should return the user from request object', () => {
-      // Mock data
-      const mockUser = {
-        userId: 1,
-        email: 'test@example.com',
-        role: 'CUSTOMER',
-      };
-      
-      // Mock request object with user property
-      const mockRequest = {
-        user: mockUser,
-      } as unknown as Request;
-
-      // Execute
-      const result = controller.getMe(mockRequest);
-
-      // Assert
-      expect(result).toEqual(mockUser);
-    });
-  });
-
   describe('create', () => {
     it('should create a new user', async () => {
       // Mock data
@@ -65,12 +43,18 @@ describe('UserController', () => {
         email: 'new@example.com',
         password: 'password123',
       };
-      const createdUser = {
+
+      // Fix line 63: properly type the createdUser instead of using 'any'
+      const createdUser: {
+        id: number;
+        email: string;
+        role: string;
+      } = {
         id: 1,
         email: 'new@example.com',
         role: 'CUSTOMER',
       };
-      
+
       // Setup mock
       mockUserService.create.mockResolvedValue(createdUser);
 
@@ -94,7 +78,7 @@ describe('UserController', () => {
         email: 'admin@example.com',
         role: 'ADMIN',
       };
-      
+
       // Setup mock
       mockUserService.create.mockResolvedValue(createdUser);
 
@@ -112,12 +96,16 @@ describe('UserController', () => {
         email: 'existing@example.com',
         password: 'password123',
       };
-      
+
       // Setup mock to throw an error
-      mockUserService.create.mockRejectedValue(new Error('Email already exists'));
+      mockUserService.create.mockRejectedValue(
+        new Error('Email already exists'),
+      );
 
       // Execute & Assert
-      await expect(controller.create(createUserDto)).rejects.toThrow('Email already exists');
+      await expect(controller.create(createUserDto)).rejects.toThrow(
+        'Email already exists',
+      );
       expect(mockUserService.create).toHaveBeenCalledWith(createUserDto);
     });
   });

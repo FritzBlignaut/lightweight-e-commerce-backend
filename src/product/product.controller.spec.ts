@@ -6,7 +6,6 @@ import { UpdateProductDto } from './dto/update-product.dto';
 
 describe('ProductController', () => {
   let controller: ProductController;
-  let productService: ProductService;
 
   // Mock ProductService
   const mockProductService = {
@@ -29,7 +28,6 @@ describe('ProductController', () => {
     }).compile();
 
     controller = module.get<ProductController>(ProductController);
-    productService = module.get<ProductService>(ProductService);
 
     // Reset all mocks before each test
     jest.clearAllMocks();
@@ -49,7 +47,7 @@ describe('ProductController', () => {
         ],
         total: 2,
       };
-      
+
       // Setup mock
       mockProductService.findAll.mockResolvedValue(expectedResult);
 
@@ -70,12 +68,10 @@ describe('ProductController', () => {
     it('should apply search and price filters correctly', async () => {
       // Mock data
       const expectedResult = {
-        items: [
-          { id: 1, name: 'Test Product', price: 15.99, stock: 5 },
-        ],
+        items: [{ id: 1, name: 'Test Product', price: 15.99, stock: 5 }],
         total: 1,
       };
-      
+
       // Setup mock
       mockProductService.findAll.mockResolvedValue(expectedResult);
 
@@ -102,12 +98,18 @@ describe('ProductController', () => {
         ],
         total: 10,
       };
-      
+
       // Setup mock
       mockProductService.findAll.mockResolvedValue(expectedResult);
 
       // Execute
-      const result = await controller.findAll(undefined, undefined, undefined, 2, 4);
+      const result = await controller.findAll(
+        undefined,
+        undefined,
+        undefined,
+        2,
+        4,
+      );
 
       // Assert
       expect(result).toEqual(expectedResult);
@@ -134,7 +136,7 @@ describe('ProductController', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       // Setup mock
       mockProductService.findOne.mockResolvedValue(expectedProduct);
 
@@ -149,7 +151,7 @@ describe('ProductController', () => {
     it('should handle non-existent products', async () => {
       // Mock data
       const productId = '999';
-      
+
       // Setup mock
       mockProductService.findOne.mockResolvedValue(null);
 
@@ -177,7 +179,7 @@ describe('ProductController', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       // Setup mock
       mockProductService.create.mockResolvedValue(expectedProduct);
 
@@ -207,7 +209,7 @@ describe('ProductController', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       // Setup mock
       mockProductService.update.mockResolvedValue(expectedProduct);
 
@@ -216,7 +218,10 @@ describe('ProductController', () => {
 
       // Assert
       expect(result).toEqual(expectedProduct);
-      expect(mockProductService.update).toHaveBeenCalledWith(productId, updateProductDto);
+      expect(mockProductService.update).toHaveBeenCalledWith(
+        productId,
+        updateProductDto,
+      );
     });
   });
 
@@ -233,7 +238,7 @@ describe('ProductController', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       // Setup mock
       mockProductService.remove.mockResolvedValue(deletedProduct);
 

@@ -1,5 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { PrismaService } from "src/prisma/prisma.service";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class CartService {
@@ -51,10 +55,13 @@ export class CartService {
 
   async addItem(userId: string, productId: string, quantity: number) {
     const cart = await this.getOrCreateCart(userId);
-    const product = await this.prisma.product.findUnique({ where: { id: Number(productId) } });
+    const product = await this.prisma.product.findUnique({
+      where: { id: Number(productId) },
+    });
 
     if (!product) throw new NotFoundException('Product not found');
-    if (quantity <= 0) throw new BadRequestException('Quantity must be at least 1');
+    if (quantity <= 0)
+      throw new BadRequestException('Quantity must be at least 1');
 
     const existing = await this.prisma.cartItem.findUnique({
       where: {
@@ -68,9 +75,7 @@ export class CartService {
     const requestedQty = existing ? existing.quantity + quantity : quantity;
 
     if (requestedQty > product.stock) {
-      throw new BadRequestException(
-        `Only ${product.stock} item(s) in stock`
-      );
+      throw new BadRequestException(`Only ${product.stock} item(s) in stock`);
     }
 
     if (existing) {
@@ -102,7 +107,9 @@ export class CartService {
     }
 
     const cart = await this.getOrCreateCart(userId);
-    const product = await this.prisma.product.findUnique({ where: { id: Number(productId) } });
+    const product = await this.prisma.product.findUnique({
+      where: { id: Number(productId) },
+    });
 
     if (!product) throw new NotFoundException('Product not found');
 

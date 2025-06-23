@@ -22,13 +22,20 @@ export class UserService {
       throw new ConflictException('User with this email already exists');
     }
 
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    
+    // Fix type safety issues with bcrypt
+    const hashedPassword = (await bcrypt.hash(
+      createUserDto.password,
+      10,
+    )) as string;
+
+    // Explicitly define the role type for better type safety
+    const role: Role = (createUserDto.role as Role) || Role.CUSTOMER;
+
     return this.prisma.user.create({
       data: {
         email: createUserDto.email,
         password: hashedPassword,
-        role: createUserDto.role || Role.CUSTOMER,
+        role: role,
       },
     });
   }
