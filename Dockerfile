@@ -20,4 +20,4 @@ COPY --from=build /app/prisma ./prisma
 RUN npm install --omit=dev
 
 # Make sure the application runs properly
-CMD ["node", "dist/main"]
+CMD ["node", "dist"]
