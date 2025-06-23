@@ -1,5 +1,10 @@
 // dto/admin-order-query.dto.ts
-import { IsOptional, IsNumberString, IsString, IsDateString } from 'class-validator';
+import {
+  IsOptional,
+  IsNumberString,
+  IsString,
+  IsDateString,
+} from 'class-validator';
 
 export class AdminOrderQueryDto {
   @IsOptional() @IsNumberString() page?: string;

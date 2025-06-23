@@ -4,9 +4,17 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { OrderStatus } from '@prisma/client';
 
+// Define type for the request object used in tests
+interface RequestWithUser extends Request {
+  user: {
+    userId: string;
+    email?: string;
+    role?: string;
+  };
+}
+
 describe('OrderService', () => {
   let service: OrderService;
-  let prismaService: PrismaService;
 
   // Mock PrismaService
   const mockPrismaService = {
@@ -45,7 +53,6 @@ describe('OrderService', () => {
     }).compile();
 
     service = module.get<OrderService>(OrderService);
-    prismaService = module.get<PrismaService>(PrismaService);
 
     // Reset all mocks before each test
     jest.clearAllMocks();
@@ -152,7 +159,7 @@ describe('OrderService', () => {
 
       // Execute & Assert
       await expect(service.placeOrder(userId)).rejects.toThrow(
-        new BadRequestException('Cart is empty')
+        new BadRequestException('Cart is empty'),
       );
       expect(mockPrismaService.order.create).not.toHaveBeenCalled();
     });
@@ -166,7 +173,7 @@ describe('OrderService', () => {
 
       // Execute & Assert
       await expect(service.placeOrder(userId)).rejects.toThrow(
-        new BadRequestException('Cart is empty')
+        new BadRequestException('Cart is empty'),
       );
       expect(mockPrismaService.order.create).not.toHaveBeenCalled();
     });
@@ -198,7 +205,7 @@ describe('OrderService', () => {
 
       // Execute & Assert
       await expect(service.placeOrder(userId)).rejects.toThrow(
-        new BadRequestException('Not enough stock for Test Product')
+        new BadRequestException('Not enough stock for Test Product'),
       );
       expect(mockPrismaService.order.create).not.toHaveBeenCalled();
     });
@@ -242,27 +249,7 @@ describe('OrderService', () => {
         totalPages: 3, // Math.ceil(15/5)
       });
 
-      // Verify expected filters and pagination
-      expect(mockPrismaService.$transaction).toHaveBeenCalled();
-      const whereCondition = {
-        AND: [
-          {
-            user: {
-              email: {
-                contains: 'test',
-                mode: 'insensitive',
-              },
-            },
-          },
-          { total: { gte: 10 } },
-          { total: { lte: 100 } },
-          { createdAt: { gte: new Date('2023-01-01') } },
-          { createdAt: { lte: new Date('2023-12-31') } },
-        ],
-      };
-
-      // While we can't directly check the transaction arguments,
-      // we can verify the transaction was called
+      // Verify transaction was called
       expect(mockPrismaService.$transaction).toHaveBeenCalled();
     });
 
@@ -325,7 +312,15 @@ describe('OrderService', () => {
       // Mock data
       const orderId = 'order-id';
       const status = OrderStatus.SHIPPED;
-      const req = { user: { userId: '1' } } as any;
+      // Create a properly typed request object
+      const req: RequestWithUser = {
+        user: {
+          userId: '1',
+          email: 'admin@example.com',
+          role: 'ADMIN',
+        },
+      } as RequestWithUser;
+
       const mockOrder = {
         id: orderId,
         status: OrderStatus.PLACED,
@@ -345,7 +340,6 @@ describe('OrderService', () => {
       // Setup mocks
       mockPrismaService.order.findUnique.mockResolvedValue(mockOrder);
       mockPrismaService.$transaction.mockImplementation((operations) => {
-        // Make sure operations is an array with the expected number of items
         expect(operations).toHaveLength(2);
         return Promise.resolve([mockUpdatedOrder, mockHistoryEntry]);
       });
@@ -359,18 +353,20 @@ describe('OrderService', () => {
         where: { id: orderId },
       });
       expect(mockPrismaService.$transaction).toHaveBeenCalled();
-      expect(mockPrismaService.$transaction).toHaveBeenCalledWith(
-        expect.any(Array)
-      );
     });
 
     it('should throw NotFoundException when order not found', async () => {
       // Setup mocks
       mockPrismaService.order.findUnique.mockResolvedValue(null);
 
+      // Create a properly typed request object
+      const req: RequestWithUser = {
+        user: { userId: '1' },
+      } as RequestWithUser;
+
       // Execute & Assert
       await expect(
-        service.updateOrderStatus('non-existent', OrderStatus.SHIPPED, { user: { userId: '1' } } as any)
+        service.updateOrderStatus('non-existent', OrderStatus.SHIPPED, req),
       ).rejects.toThrow(NotFoundException);
       expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
     });
@@ -384,12 +380,17 @@ describe('OrderService', () => {
         status: OrderStatus.PLACED,
       };
 
+      // Create a properly typed request object
+      const req: RequestWithUser = {
+        user: { userId: '1' },
+      } as RequestWithUser;
+
       // Setup mocks
       mockPrismaService.order.findUnique.mockResolvedValue(mockOrder);
 
       // Execute & Assert
       await expect(
-        service.updateOrderStatus(orderId, status, { user: { userId: '1' } } as any)
+        service.updateOrderStatus(orderId, status, req),
       ).rejects.toThrow(BadRequestException);
       expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
     });
@@ -411,7 +412,9 @@ describe('OrderService', () => {
       ];
 
       // Setup mocks
-      mockPrismaService.orderHistory.findMany.mockResolvedValue(mockHistoryEntries);
+      mockPrismaService.orderHistory.findMany.mockResolvedValue(
+        mockHistoryEntries,
+      );
 
       // Execute
       const result = await service.getOrderHistory(orderId);

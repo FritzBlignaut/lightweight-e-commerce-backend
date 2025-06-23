@@ -1,16 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from './user.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import { ConflictException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
 
-// Mock bcrypt
+// Mock bcrypt correctly with proper types
+const mockedBcrypt = jest.mocked(bcrypt);
 jest.mock('bcrypt');
 
 describe('UserService', () => {
   let service: UserService;
-  let prismaService: PrismaService;
 
   // Mock PrismaService
   const mockPrismaService = {
@@ -35,7 +35,6 @@ describe('UserService', () => {
     }).compile();
 
     service = module.get<UserService>(UserService);
-    prismaService = module.get<PrismaService>(PrismaService);
 
     // Reset all mocks before each test
     jest.clearAllMocks();
@@ -52,7 +51,7 @@ describe('UserService', () => {
         { id: 1, email: 'user1@example.com', role: 'CUSTOMER' },
         { id: 2, email: 'user2@example.com', role: 'ADMIN' },
       ];
-      
+
       // Setup mocks
       mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
 
@@ -78,9 +77,9 @@ describe('UserService', () => {
         email: 'new@example.com',
         role: 'CUSTOMER',
       };
-      
-      // Setup mocks
-      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+
+      // Setup mocks - Fix bcrypt.hash calls
+      mockedBcrypt.hash.mockResolvedValue(hashedPassword);
       mockPrismaService.user.findUnique.mockResolvedValue(null); // No existing user
       mockPrismaService.user.create.mockResolvedValue(mockCreatedUser);
 
@@ -92,7 +91,7 @@ describe('UserService', () => {
       expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
         where: { email: 'new@example.com' },
       });
-      expect(bcrypt.hash).toHaveBeenCalledWith('password123', 10);
+      expect(mockedBcrypt.hash).toHaveBeenCalledWith('password123', 10);
       expect(mockPrismaService.user.create).toHaveBeenCalledWith({
         data: {
           email: 'new@example.com',
@@ -115,9 +114,9 @@ describe('UserService', () => {
         email: 'admin@example.com',
         role: Role.ADMIN,
       };
-      
-      // Setup mocks
-      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+
+      // Setup mocks - Fix bcrypt.hash calls
+      mockedBcrypt.hash.mockResolvedValue(hashedPassword);
       mockPrismaService.user.findUnique.mockResolvedValue(null);
       mockPrismaService.user.create.mockResolvedValue(mockCreatedUser);
 
@@ -141,17 +140,19 @@ describe('UserService', () => {
         email: 'existing@example.com',
         password: 'password123',
       };
-      const existingUser = { 
-        id: 1, 
-        email: 'existing@example.com', 
-        role: 'CUSTOMER' 
+      const existingUser = {
+        id: 1,
+        email: 'existing@example.com',
+        role: 'CUSTOMER',
       };
-      
+
       // Setup mocks
       mockPrismaService.user.findUnique.mockResolvedValue(existingUser);
 
       // Execute & Assert
-      await expect(service.create(createUserDto)).rejects.toThrow(ConflictException);
+      await expect(service.create(createUserDto)).rejects.toThrow(
+        ConflictException,
+      );
       expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
         where: { email: 'existing@example.com' },
       });
@@ -164,7 +165,7 @@ describe('UserService', () => {
       // Mock data
       const email = 'test@example.com';
       const mockUser = { id: 1, email: 'test@example.com', role: 'CUSTOMER' };
-      
+
       // Setup mocks
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
 
@@ -181,7 +182,7 @@ describe('UserService', () => {
     it('should return null if user not found by email', async () => {
       // Mock data
       const email = 'nonexistent@example.com';
-      
+
       // Setup mocks
       mockPrismaService.user.findUnique.mockResolvedValue(null);
 

@@ -2,10 +2,19 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CartController } from './cart.controller';
 import { CartService } from './cart.service';
 import { AddCartItemDto } from './dto/add-cart-item.dto';
+import { Request } from 'express';
+
+// Import or recreate the same interface used in the controller
+interface RequestWithUser extends Request {
+  user: {
+    userId: string;
+    email: string;
+    role: string;
+  };
+}
 
 describe('CartController', () => {
   let controller: CartController;
-  let cartService: CartService;
 
   // Mock CartService
   const mockCartService = {
@@ -16,10 +25,14 @@ describe('CartController', () => {
     clearCart: jest.fn(),
   };
 
-  // Mock request with user
+  // Mock request with user - properly typed to match RequestWithUser interface
   const mockRequest = {
-    user: { userId: '1' },
-  };
+    user: {
+      userId: '1',
+      email: 'test@example.com',
+      role: 'CUSTOMER',
+    },
+  } as RequestWithUser;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -33,7 +46,6 @@ describe('CartController', () => {
     }).compile();
 
     controller = module.get<CartController>(CartController);
-    cartService = module.get<CartService>(CartService);
 
     // Reset all mocks before each test
     jest.clearAllMocks();
@@ -63,7 +75,7 @@ describe('CartController', () => {
         ],
         total: 21.98,
       };
-      
+
       // Setup mock
       mockCartService.getOrCreateCart.mockResolvedValue(mockCart);
 
@@ -89,7 +101,7 @@ describe('CartController', () => {
         productId: 1,
         quantity: 2,
       };
-      
+
       // Setup mock
       mockCartService.addItem.mockResolvedValue(mockCartItem);
 
@@ -101,7 +113,7 @@ describe('CartController', () => {
       expect(mockCartService.addItem).toHaveBeenCalledWith(
         '1',
         addItemDto.productId,
-        addItemDto.quantity
+        addItemDto.quantity,
       );
     });
   });
@@ -119,7 +131,7 @@ describe('CartController', () => {
         productId: 1,
         quantity: 3,
       };
-      
+
       // Setup mock
       mockCartService.updateItem.mockResolvedValue(mockUpdatedItem);
 
@@ -131,7 +143,7 @@ describe('CartController', () => {
       expect(mockCartService.updateItem).toHaveBeenCalledWith(
         '1',
         updateItemDto.productId,
-        updateItemDto.quantity
+        updateItemDto.quantity,
       );
     });
   });
@@ -146,7 +158,7 @@ describe('CartController', () => {
         productId: 1,
         quantity: 2,
       };
-      
+
       // Setup mock
       mockCartService.removeItem.mockResolvedValue(mockRemovedItem);
 
@@ -163,7 +175,7 @@ describe('CartController', () => {
     it('should clear the cart', async () => {
       // Mock data
       const mockDeleteResult = { count: 2 };
-      
+
       // Setup mock
       mockCartService.clearCart.mockResolvedValue(mockDeleteResult);
 

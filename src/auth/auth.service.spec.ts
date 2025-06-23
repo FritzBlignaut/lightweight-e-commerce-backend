@@ -5,13 +5,8 @@ import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
-// Mock bcrypt
-jest.mock('bcrypt');
-
 describe('AuthService', () => {
   let service: AuthService;
-  let prismaService: PrismaService;
-  let jwtService: JwtService;
 
   // Mock services
   const mockPrismaService = {
@@ -26,6 +21,14 @@ describe('AuthService', () => {
   };
 
   beforeEach(async () => {
+    // Create spies for bcrypt methods
+    jest
+      .spyOn(bcrypt, 'compare')
+      .mockImplementation(() => Promise.resolve(true));
+    jest
+      .spyOn(bcrypt, 'hash')
+      .mockImplementation(() => Promise.resolve('hashedPassword'));
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -41,8 +44,6 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    prismaService = module.get<PrismaService>(PrismaService);
-    jwtService = module.get<JwtService>(JwtService);
 
     // Reset all mocks before each test
     jest.clearAllMocks();
@@ -61,20 +62,26 @@ describe('AuthService', () => {
         password: 'hashedPassword',
         role: 'CUSTOMER',
       };
-      
-      // Setup mocks
+
+      // Setup mocks with proper typing - no need to redefine mockedBcrypt here
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       // Execute
-      const result = await service.validateUser('test@example.com', 'password123');
+      const result = await service.validateUser(
+        'test@example.com',
+        'password123',
+      );
 
       // Assert
       expect(result).toEqual(mockUser);
       expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
         where: { email: 'test@example.com' },
       });
-      expect(bcrypt.compare).toHaveBeenCalledWith('password123', 'hashedPassword');
+      expect(bcrypt.compare).toHaveBeenCalledWith(
+        'password123',
+        'hashedPassword',
+      );
     });
 
     it('should throw UnauthorizedException when user not found', async () => {
@@ -83,7 +90,7 @@ describe('AuthService', () => {
 
       // Execute & Assert
       await expect(
-        service.validateUser('nonexistent@example.com', 'password123')
+        service.validateUser('nonexistent@example.com', 'password123'),
       ).rejects.toThrow(UnauthorizedException);
       expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
         where: { email: 'nonexistent@example.com' },
@@ -98,19 +105,22 @@ describe('AuthService', () => {
         password: 'hashedPassword',
         role: 'CUSTOMER',
       };
-      
-      // Setup mocks
+
+      // Setup mocks - use the pre-defined mockedBcrypt
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       // Execute & Assert
       await expect(
-        service.validateUser('test@example.com', 'wrongpassword')
+        service.validateUser('test@example.com', 'wrongpassword'),
       ).rejects.toThrow(UnauthorizedException);
       expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
         where: { email: 'test@example.com' },
       });
-      expect(bcrypt.compare).toHaveBeenCalledWith('wrongpassword', 'hashedPassword');
+      expect(bcrypt.compare).toHaveBeenCalledWith(
+        'wrongpassword',
+        'hashedPassword',
+      );
     });
   });
 
@@ -123,7 +133,7 @@ describe('AuthService', () => {
         role: 'CUSTOMER',
       };
       const mockToken = 'jwt-token';
-      
+
       // Setup mocks
       mockJwtService.sign.mockReturnValue(mockToken);
 
@@ -155,7 +165,7 @@ describe('AuthService', () => {
         role: 'CUSTOMER',
       };
       const mockToken = 'jwt-token';
-      
+
       // Setup mocks
       (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
       mockPrismaService.user.create.mockResolvedValue(createdUser);
@@ -195,7 +205,7 @@ describe('AuthService', () => {
         password: hashedPassword,
         role: 'ADMIN',
       };
-      
+
       // Setup mocks
       (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
       mockPrismaService.user.create.mockResolvedValue(createdUser);
@@ -219,33 +229,43 @@ describe('AuthService', () => {
   describe('error handling', () => {
     it('should handle database errors during user validation', async () => {
       // Setup mocks to throw an error
-      mockPrismaService.user.findUnique.mockRejectedValue(new Error('Database connection error'));
-      
+      mockPrismaService.user.findUnique.mockRejectedValue(
+        new Error('Database connection error'),
+      );
+
       // Execute & Assert
-      await expect(service.validateUser('test@example.com', 'password')).rejects.toThrow();
+      await expect(
+        service.validateUser('test@example.com', 'password'),
+      ).rejects.toThrow();
     });
 
     it('should handle database errors during user registration', async () => {
       // Setup mocks
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword');
-      mockPrismaService.user.create.mockRejectedValue(new Error('Database connection error'));
-      
+      mockPrismaService.user.create.mockRejectedValue(
+        new Error('Database connection error'),
+      );
+
       // Execute & Assert
-      await expect(service.register({
-        email: 'test@example.com',
-        password: 'password',
-      })).rejects.toThrow();
+      await expect(
+        service.register({
+          email: 'test@example.com',
+          password: 'password',
+        }),
+      ).rejects.toThrow();
     });
 
     it('should handle bcrypt errors', async () => {
       // Setup mocks to simulate bcrypt error
       (bcrypt.hash as jest.Mock).mockRejectedValue(new Error('Bcrypt error'));
-      
+
       // Execute & Assert
-      await expect(service.register({
-        email: 'test@example.com',
-        password: 'password',
-      })).rejects.toThrow();
+      await expect(
+        service.register({
+          email: 'test@example.com',
+          password: 'password',
+        }),
+      ).rejects.toThrow();
     });
   });
 });

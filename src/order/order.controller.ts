@@ -1,10 +1,30 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, Request, UseGuards } from "@nestjs/common";
-import { OrderService } from "./order.service";
-import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
-import { RolesGuard } from "src/auth/guards/roles.guard";
-import { Roles } from "src/auth/decorators/roles.decorator";
-import { AdminOrderQueryDto } from "./dto/admin-order-query.dto";
-import { UpdateOrderStatusDto } from "./dto/update-order-status.dto";
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
+import { OrderService } from './order.service';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { AdminOrderQueryDto } from './dto/admin-order-query.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+
+// Define a typed interface for requests with JWT user data
+interface RequestWithUser extends Request {
+  user: {
+    userId: string;
+    email: string;
+    role: string;
+  };
+}
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('orders')
@@ -12,12 +32,12 @@ export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
   @Post()
-  async placeOrder(@Request() req) {
+  async placeOrder(@Request() req: RequestWithUser) {
     return this.orderService.placeOrder(req.user.userId);
   }
 
   @Get()
-  async getOrders(@Request() req) {
+  async getOrders(@Request() req: RequestWithUser) {
     return this.orderService.getOrders(req.user.userId);
   }
 
@@ -29,8 +49,10 @@ export class OrderController {
       ...query,
       page: query.page !== undefined ? Number(query.page) : undefined,
       limit: query.limit !== undefined ? Number(query.limit) : undefined,
-      minTotal: query.minTotal !== undefined ? Number(query.minTotal) : undefined,
-      maxTotal: query.maxTotal !== undefined ? Number(query.maxTotal) : undefined,
+      minTotal:
+        query.minTotal !== undefined ? Number(query.minTotal) : undefined,
+      maxTotal:
+        query.maxTotal !== undefined ? Number(query.maxTotal) : undefined,
     };
     return this.orderService.getAllOrders(parsedQuery);
   }
@@ -41,7 +63,7 @@ export class OrderController {
   async updateStatus(
     @Param('orderId') orderId: string,
     @Body() dto: UpdateOrderStatusDto,
-    @Req() req: Request & { user: { userId: string } },
+    @Req() req: RequestWithUser,
   ) {
     return this.orderService.updateOrderStatus(orderId, dto.status, req);
   }

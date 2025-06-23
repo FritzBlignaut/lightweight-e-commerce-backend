@@ -1,14 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { OrderController } from './order.controller';
 import { OrderService } from './order.service';
-import { Request } from '@nestjs/common';
 import { OrderStatus } from '@prisma/client';
 import { AdminOrderQueryDto } from './dto/admin-order-query.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
+// Define the RequestWithUser interface to match the one in controller
+interface RequestWithUser extends Request {
+  user: {
+    userId: string;
+    email: string;
+    role: string;
+  };
+}
+
 describe('OrderController', () => {
   let controller: OrderController;
-  let orderService: OrderService;
 
   // Mock OrderService
   const mockOrderService = {
@@ -18,6 +25,16 @@ describe('OrderController', () => {
     updateOrderStatus: jest.fn(),
     getOrderHistory: jest.fn(),
   };
+
+  // Create a reusable mock request to reduce duplication
+  const createMockRequest = (role: string = 'CUSTOMER', userId: string = '1') =>
+    ({
+      user: {
+        userId,
+        email: role === 'ADMIN' ? 'admin@example.com' : 'user@example.com',
+        role,
+      },
+    }) as RequestWithUser;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -31,7 +48,6 @@ describe('OrderController', () => {
     }).compile();
 
     controller = module.get<OrderController>(OrderController);
-    orderService = module.get<OrderService>(OrderService);
 
     // Reset all mocks before each test
     jest.clearAllMocks();
@@ -43,17 +59,16 @@ describe('OrderController', () => {
 
   describe('placeOrder', () => {
     it('should place an order for the authenticated user', async () => {
-      // Mock data
-      const mockRequest = {
-        user: { userId: '1' },
-      } as unknown as Request;
+      // Use the helper function to create mock request
+      const mockRequest = createMockRequest();
+
       const mockOrder = {
         id: 'order-id',
         userId: 1,
         total: 99.99,
         status: 'PLACED',
       };
-      
+
       // Setup mock
       mockOrderService.placeOrder.mockResolvedValue(mockOrder);
 
@@ -68,10 +83,15 @@ describe('OrderController', () => {
 
   describe('getOrders', () => {
     it('should get orders for the authenticated user', async () => {
-      // Mock data
+      // Mock data with proper typing
       const mockRequest = {
-        user: { userId: '1' },
-      } as unknown as Request;
+        user: {
+          userId: '1',
+          email: 'test@example.com',
+          role: 'CUSTOMER',
+        },
+      } as RequestWithUser;
+
       const mockOrders = [
         {
           id: 'order-id',
@@ -80,7 +100,7 @@ describe('OrderController', () => {
           status: 'PLACED',
         },
       ];
-      
+
       // Setup mock
       mockOrderService.getOrders.mockResolvedValue(mockOrders);
 
@@ -95,7 +115,7 @@ describe('OrderController', () => {
 
   describe('getAllOrders', () => {
     it('should return all orders with pagination and filters for admin', async () => {
-      // Mock data
+      // No changes needed for this test as it doesn't use the request object
       const mockQuery: AdminOrderQueryDto = {
         page: '2',
         limit: '5',
@@ -129,7 +149,7 @@ describe('OrderController', () => {
         limit: 5,
         totalPages: 2,
       };
-      
+
       // Setup mock
       mockOrderService.getAllOrders.mockResolvedValue(mockResult);
 
@@ -138,11 +158,13 @@ describe('OrderController', () => {
 
       // Assert
       expect(result).toEqual(mockResult);
-      expect(mockOrderService.getAllOrders).toHaveBeenCalledWith(mockParsedQuery);
+      expect(mockOrderService.getAllOrders).toHaveBeenCalledWith(
+        mockParsedQuery,
+      );
     });
 
     it('should handle empty query parameters', async () => {
-      // Mock data
+      // No changes needed for this test as it doesn't use the request object
       const mockQuery = {} as AdminOrderQueryDto;
       const mockResult = {
         data: [],
@@ -151,7 +173,7 @@ describe('OrderController', () => {
         limit: 10,
         totalPages: 0,
       };
-      
+
       // Setup mock
       mockOrderService.getAllOrders.mockResolvedValue(mockResult);
 
@@ -166,19 +188,24 @@ describe('OrderController', () => {
 
   describe('updateStatus', () => {
     it('should update order status', async () => {
-      // Mock data
+      // Mock data with proper typing
       const orderId = 'order-id';
       const dto: UpdateOrderStatusDto = {
         status: OrderStatus.SHIPPED,
       };
       const mockRequest = {
-        user: { userId: '1' },
-      } as unknown as Request & { user: { userId: string } };
+        user: {
+          userId: '1',
+          email: 'admin@example.com',
+          role: 'ADMIN',
+        },
+      } as RequestWithUser;
+
       const mockUpdatedOrder = {
         id: 'order-id',
         status: OrderStatus.SHIPPED,
       };
-      
+
       // Setup mock
       mockOrderService.updateOrderStatus.mockResolvedValue(mockUpdatedOrder);
 
@@ -190,14 +217,14 @@ describe('OrderController', () => {
       expect(mockOrderService.updateOrderStatus).toHaveBeenCalledWith(
         orderId,
         dto.status,
-        mockRequest
+        mockRequest,
       );
     });
   });
 
   describe('getOrderHistory', () => {
     it('should get order history', async () => {
-      // Mock data
+      // No changes needed for this test as it doesn't use the request object
       const orderId = 'order-id';
       const mockHistory = [
         {
@@ -212,7 +239,7 @@ describe('OrderController', () => {
           },
         },
       ];
-      
+
       // Setup mock
       mockOrderService.getOrderHistory.mockResolvedValue(mockHistory);
 

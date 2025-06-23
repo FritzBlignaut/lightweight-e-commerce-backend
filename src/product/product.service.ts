@@ -1,8 +1,9 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "src/prisma/prisma.service";
-import { CreateProductDto } from "./dto/create-product.dto";
-import { UpdateProductDto } from "./dto/update-product.dto";
-import { ProductQueryParams } from "./dto/product-query.dto";
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
+import { ProductQueryParams } from './dto/product-query.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProductService {
@@ -13,15 +14,11 @@ export class ProductService {
   }
 
   async findAll(params: ProductQueryParams) {
-    const {
-      search,
-      minPrice,
-      maxPrice,
-      limit = 10,
-      offset = 0,
-    } = params;
+    const { search, minPrice, maxPrice, limit = 10, offset = 0 } = params;
 
-    const where: any = {};
+    // Use Prisma's generated type for the where clause
+    const where: Prisma.ProductWhereInput = {};
+
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -31,10 +28,13 @@ export class ProductService {
 
     if (minPrice !== undefined || maxPrice !== undefined) {
       where.price = {};
-      if (minPrice !== undefined) where.price.gte = minPrice;
-      if (maxPrice !== undefined) where.price.lte = maxPrice;
+      if (minPrice !== undefined)
+        where.price = { ...where.price, gte: minPrice };
+      if (maxPrice !== undefined)
+        where.price = { ...where.price, lte: maxPrice };
     }
 
+    // Use the transaction with proper typing
     const [items, total] = await this.prisma.$transaction([
       this.prisma.product.findMany({ where, skip: offset, take: limit }),
       this.prisma.product.count({ where }),
