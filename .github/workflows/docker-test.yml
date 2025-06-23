@@ -42,4 +42,4 @@ jobs:
           docker run
           --network=host
           -e DATABASE_URL=${{ secrets.DATABASE_URL }}
-          lightweight-e-commerce-backend-app
+          nestjs-app
